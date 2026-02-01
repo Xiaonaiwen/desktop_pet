@@ -1,0 +1,15 @@
+name: desktop_pet
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - PyQt6>=6.5.0
+    - Pillow>=10.0.0
+    - psutil>=5.9.0
+    - pywin32>=306         # Windows API calls (active window detection, etc.)
+    - PyInstaller>=6.0.0   # Packaging into .exe later
+    - rembg>=2.0.72        # Background removal from sprite images
+    - onnxruntime>=1.16.0  # Backend required by rembg

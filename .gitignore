@@ -1,0 +1,36 @@
+# Conda / Python environment
+envs/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# PyInstaller build output
+build/
+dist/
+*.spec
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Generated / personal assets
+# (sprites you generate from your own photos — keep them local, not in git)
+assets/sprites/*.png
+assets/sprites/*.jpg
+
+# Logs
+logs/
+*.log
+
+# rembg output cache
+.rembg_cache/
