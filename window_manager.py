@@ -7,6 +7,7 @@
 #   - Always stays on top of other windows.
 #   - Has no title bar, borders, or window chrome.
 #   - Can be dragged around the desktop by clicking and dragging.
+#   - Repaints itself whenever character.py signals a new animation frame.
 # ---------------------------------------------------------------------------
 
 from PyQt6.QtWidgets import QWidget, QApplication
@@ -27,6 +28,10 @@ class PetWindow(QWidget):
         # Track mouse drag offset so dragging feels natural
         self._drag_offset = QPoint(0, 0)
 
+        # Connect to character's animation — repaint the window every time
+        # the character advances to a new frame
+        self.character.on_frame_changed = self.update
+
         self._setup_window()
         self._set_starting_position()
 
@@ -35,7 +40,6 @@ class PetWindow(QWidget):
     # ------------------------------------------------------------------
     def _setup_window(self):
         """Configure the window to be transparent, frameless, and on top."""
-        # Remove title bar and borders
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint      # no title bar / border
             | Qt.WindowType.WindowStaysOnTopHint   # always on top
@@ -66,7 +70,7 @@ class PetWindow(QWidget):
     # Painting
     # ------------------------------------------------------------------
     def paintEvent(self, event):
-        """Draw the character sprite onto the window each frame."""
+        """Draw the character's current frame onto the window."""
         painter = QPainter(self)
         painter.drawPixmap(0, 0, self.character.get_pixmap())
         painter.end()
@@ -76,7 +80,6 @@ class PetWindow(QWidget):
     # ------------------------------------------------------------------
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            # Record the offset between where we clicked and the window's top-left
             self._drag_offset = event.position().toPoint()
             event.accept()
         else:
@@ -84,7 +87,6 @@ class PetWindow(QWidget):
 
     def mouseMoveEvent(self, event):
         if event.buttons() & Qt.MouseButton.LeftButton:
-            # Move window so the mouse stays at the same point on the sprite
             new_pos = event.globalPosition().toPoint() - self._drag_offset
             self.move(new_pos)
             event.accept()

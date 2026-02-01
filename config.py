@@ -27,11 +27,40 @@ WINDOW_START_X = None
 WINDOW_START_Y = None
 
 # ---------------------------------------------------------------------------
-# Sprite settings
+# Animation settings
 # ---------------------------------------------------------------------------
-# The default sprite image shown on startup.
-# This is just a filename — the full path is built automatically from SPRITES_DIR.
-DEFAULT_SPRITE = "idle.png"
+# How often the animation timer ticks, in milliseconds.
+# Lower = smoother but uses more CPU. 100ms = 10 frames per second.
+ANIMATION_TICK_MS = 100
+
+# ---------------------------------------------------------------------------
+# Sprite definitions
+# ---------------------------------------------------------------------------
+# Each animation is a list of (filename, duration_in_ms) tuples.
+# The character cycles through these frames in order, then loops.
+#
+# When you have real sprites, add the actual filenames here.
+# For now, these files won't exist — the placeholder system will kick in
+# and animate the placeholder box instead so you can see it working.
+#
+ANIMATIONS = {
+    "idle": [
+        ("idle_open.png",  600),   # eyes open — shown for 600ms
+        ("idle_open.png",  400),   # eyes open again — shown for 400ms
+        ("idle_blink.png", 150),   # eyes closed (blink) — shown for 150ms
+    ],
+    "walk_left": [
+        ("walk_left_1.png", 150),
+        ("walk_left_2.png", 150),
+    ],
+    "walk_right": [
+        ("walk_right_1.png", 150),
+        ("walk_right_2.png", 150),
+    ],
+}
+
+# The animation that plays on startup
+DEFAULT_ANIMATION = "idle"
 
 # ---------------------------------------------------------------------------
 # Placeholder colour (used when no sprite file exists yet)
