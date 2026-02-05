@@ -28,9 +28,14 @@ class PetWindow(QWidget):
 
         # --- Drag state ---
         self._drag_offset = QPoint(0, 0)
+        self._is_dragging = False
 
         # --- Speech bubble state ---
         self._bubble_text = None    # None = bubble is hidden, string = bubble is showing
+        
+        # --- Callbacks for drag events ---
+        self.on_drag_start = None   # Called when drag begins
+        self.on_dragged = None      # Called when drag ends (release)
 
         # Connect to character's animation — repaint every time a new frame arrives
         self.character.on_frame_changed = self.update
@@ -242,20 +247,33 @@ class PetWindow(QWidget):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_offset = event.position().toPoint()
+            self._is_dragging = True
+            
+            # Notify drag start - show dragged_by_ear animation
+            if self.on_drag_start:
+                self.on_drag_start()
+            
             event.accept()
         else:
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        if event.buttons() & Qt.MouseButton.LeftButton:
+        if event.buttons() & Qt.MouseButton.LeftButton and self._is_dragging:
             new_pos = event.globalPosition().toPoint() - self._drag_offset
             self.move(new_pos)
+            # Keep dragged animation playing during entire drag
             event.accept()
         else:
             super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
+            # Only call on_dragged callback when drag ENDS (mouse released)
+            # This triggers the return-to-edge behavior
+            if self._is_dragging and self.on_dragged:
+                self.on_dragged(self.pos())
+            
+            self._is_dragging = False
             event.accept()
         else:
             super().mouseReleaseEvent(event)

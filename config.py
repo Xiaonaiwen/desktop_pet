@@ -62,6 +62,21 @@ ANIMATIONS = {
     "playing_game": [
         ("playing_game.png", 2000),
     ],
+    # Drag interaction animations
+    "dragged_by_ear": [
+        ("dragged_ear.png", 100),  # Hand grabbing elongated ear - fast loop for smooth drag
+    ],
+    "sad_walk_left": [
+        ("sad_walk_left_1.png", 150),  # Sad walking left with elongated ears
+        ("sad_walk_left_2.png", 150),
+    ],
+    "sad_walk_right": [
+        ("sad_walk_right_1.png", 150),  # Sad walking right with elongated ears
+        ("sad_walk_right_2.png", 150),
+    ],
+    "touching_ears_sad": [
+        ("touching_ears_sad.png", 2000),  # Touching own ears sadly after being dragged
+    ],
 }
 
 DEFAULT_ANIMATION = "idle"
@@ -125,6 +140,46 @@ APP_REACTIONS = [
 
 # How long (in ms) a speech bubble stays visible before disappearing.
 SPEECH_BUBBLE_DURATION_MS = 3000
+
+# ---------------------------------------------------------------------------
+# Wanderer Mode settings
+# ---------------------------------------------------------------------------
+# How often (in ms) the movement controller updates position during walking.
+# 50ms = 20 updates per second for smooth movement.
+MOVEMENT_UPDATE_INTERVAL_MS = 50
+
+# Movement speed (pixels per update tick).
+# At 50ms intervals, speed of 3 = 60 pixels/second.
+WALK_SPEED = 3
+
+# Edge strip thickness - defines how wide the edge zones are (pixels).
+# Pet will ONLY visit the edge strips (left, right, top, bottom).
+# Larger value = thicker edge strips (more room for pet to wander).
+# Smaller value = thinner edge strips (pet stays closer to screen borders).
+CENTER_AVOID_MARGIN = 250  # Also called edge_thickness in movement.py
+
+# Duration ranges for walking and posing (in seconds).
+MIN_WALK_DURATION = 3
+MAX_WALK_DURATION = 8
+MIN_POSE_DURATION = 2
+MAX_POSE_DURATION = 5
+MIN_IDLE_DURATION = 1
+MAX_IDLE_DURATION = 3
+
+# Chance (0.0 to 1.0) that the character will do a pose after finishing a walk.
+# 0.7 = 70% chance to pose, 30% chance to just go idle.
+POSE_AFTER_WALK_CHANCE = 0.7
+
+# List of pose animations to randomly choose from in Wanderer mode.
+# Make sure these exist in the ANIMATIONS dict above!
+WANDERER_POSES = [
+    "proud",          # Proud stance
+    "surprised",      # Surprised look
+    "judging",        # Judgmental pose
+    "disappointed",   # Disappointed look
+    "working_hard",   # Working hard pose
+    "playing_game",   # Playing game pose
+]
 
 # ---------------------------------------------------------------------------
 # Placeholder colour (used when no sprite file exists yet)
