@@ -77,6 +77,57 @@ ANIMATIONS = {
     "touching_ears_sad": [
         ("touching_ears_sad.png", 2000),  # Touching own ears sadly after being dragged
     ],
+    # Interactive Mode - Slap reaction
+    "slap_reaction": [
+        ("slap_shocked.png",  200),   # Initial shock
+        ("slap_spinning.png", 150),   # Spinning from impact
+        ("slap_spinning.png", 150),   # Loop
+        ("slap_spinning.png", 150),   # Loop
+        ("slap_dizzy.png",   1000),   # Dizzy with stars
+    ],
+    # Interactive Mode - Hang action (sprite shows rope circling character + roof)
+    "hang_struggling": [
+        ("hang_struggling.png", 300),   # Character wrapped in rope, struggling
+        ("hang_struggling.png", 300),   # (loops - same frame for consistency)
+    ],
+    "hang_dangling": [
+        ("hang_dangling.png", 2000),  # Character wrapped in rope, calm/resigned
+    ],
+    # Interactive Mode - Feed action
+    "eating": [
+        ("eating_1.png", 400),  # Taking bite
+        ("eating_2.png", 400),  # Chewing
+        ("eating_1.png", 400),  # Another bite
+    ],
+    "eating_satisfied": [
+        ("satisfied_happy.png", 1500),  # Content after eating
+    ],
+    # Interactive Mode - Pet action
+    "petting_happy": [
+        ("pet_happy_1.png", 300),  # Eyes closed, smiling
+        ("pet_happy_2.png", 300),  # Slight movement
+        ("pet_hearts.png",  800),  # Hearts appear
+    ],
+    # Interactive Mode - Hang combinations (different animations when hanging)
+    "hang_slap_reaction": [
+        ("hang_slap_shocked.png",  200),   # Shocked while hanging in rope
+        ("hang_slap_spinning.png", 150),   # Spinning in rope from impact
+        ("hang_slap_spinning.png", 150),   # Loop
+        ("hang_slap_dizzy.png",   1000),   # Dizzy with stars, still in rope
+    ],
+    "hang_eating": [
+        ("hang_eating_1.png", 400),  # Taking bite while hanging
+        ("hang_eating_2.png", 400),  # Chewing while hanging
+        ("hang_eating_1.png", 400),  # Another bite while hanging
+    ],
+    "hang_eating_satisfied": [
+        ("hang_satisfied.png", 1500),  # Content after eating, still hanging
+    ],
+    "hang_petting_happy": [
+        ("hang_pet_happy_1.png", 300),  # Happy while hanging
+        ("hang_pet_happy_2.png", 300),  # Enjoying pets while hanging
+        ("hang_pet_hearts.png",  800),  # Hearts appear while hanging
+    ],
 }
 
 DEFAULT_ANIMATION = "idle"
@@ -185,3 +236,17 @@ WANDERER_POSES = [
 # Placeholder colour (used when no sprite file exists yet)
 # ---------------------------------------------------------------------------
 PLACEHOLDER_COLOR = (100, 149, 237)   # cornflower blue (R, G, B)
+
+# ---------------------------------------------------------------------------
+# Interactive Mode settings
+# ---------------------------------------------------------------------------
+# Duration actions play before returning to idle (in milliseconds)
+SLAP_REACTION_DURATION_MS = 2000
+EATING_DURATION_MS = 2000
+SATISFIED_DURATION_MS = 1500
+PETTING_DURATION_MS = 1500
+
+# Hang behavior timings
+HANG_STRUGGLING_DURATION_MS = 3000  # How long to struggle before dangling
+HANG_DANGLING_DURATION_MS = 5000    # How long to dangle before struggling again
+

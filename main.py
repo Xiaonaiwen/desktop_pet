@@ -4,7 +4,7 @@
 # Creates the Qt application, loads the character, opens the window,
 # starts the mode manager, and runs the event loop.
 # 
-# Phase 5: Added right-click context menu for switching between modes.
+# Phase 6: Added Interactive Mode with user-triggered actions (slap, hang, feed, pet).
 # ---------------------------------------------------------------------------
 
 import sys
@@ -69,8 +69,52 @@ class DesktopPetApp:
             wanderer_action.setEnabled(False)  # Disable if already in this mode
         menu.addAction(wanderer_action)
         
+        interactive_action = QAction("🎮 Interactive Mode", self.window)
+        interactive_action.setToolTip("Manual control - trigger actions yourself")
+        interactive_action.triggered.connect(lambda: self.mode_manager.switch_to_interactive())
+        if current_mode == "interactive":
+            interactive_action.setEnabled(False)  # Disable if already in this mode
+        menu.addAction(interactive_action)
+        
         # --- Separator ---
         menu.addSeparator()
+        
+        # --- Interactive actions (only show in Interactive Mode) ---
+        if current_mode == "interactive":
+            slap_action = QAction("👋 Slap", self.window)
+            slap_action.setToolTip("Give them a playful slap")
+            slap_action.triggered.connect(lambda: self.mode_manager.trigger_slap())
+            menu.addAction(slap_action)
+            
+            # Check if currently hanging (using persistent flag)
+            is_hanging = self.mode_manager._was_hanging_before_action
+            
+            # Show ONLY Hang or Unhang (not both)
+            if is_hanging:
+                # Currently hanging - show only Unhang
+                unhang_action = QAction("🔓 Unhang", self.window)
+                unhang_action.setToolTip("Release them from hanging")
+                unhang_action.triggered.connect(lambda: self.mode_manager.trigger_unhang())
+                menu.addAction(unhang_action)
+            else:
+                # Not hanging - show only Hang
+                hang_action = QAction("🪝 Hang", self.window)
+                hang_action.setToolTip("Hang them with a rope (in-place animation)")
+                hang_action.triggered.connect(lambda: self.mode_manager.trigger_hang())
+                menu.addAction(hang_action)
+            
+            feed_action = QAction("🍪 Feed", self.window)
+            feed_action.setToolTip("Give them a treat")
+            feed_action.triggered.connect(lambda: self.mode_manager.trigger_feed())
+            menu.addAction(feed_action)
+            
+            pet_action = QAction("💕 Pet", self.window)
+            pet_action.setToolTip("Pet them affectionately")
+            pet_action.triggered.connect(lambda: self.mode_manager.trigger_pet())
+            menu.addAction(pet_action)
+            
+            # Separator before quit
+            menu.addSeparator()
         
         # --- Quit option ---
         quit_action = QAction("❌ Quit", self.window)

@@ -41,6 +41,16 @@ class ModeManager:
         self._return_target = None
         self._return_edge = None
 
+        # --- Interactive Mode components ---
+        self._interactive_state = "idle"  # idle, slapping, hanging, eating, petting, satisfied
+        self._hang_timer = QTimer()
+        self._hang_timer.timeout.connect(self._on_hang_toggle)
+        self._hang_phase = "struggling"  # struggling or dangling
+        self._was_hanging_before_action = False  # Track if action was done while hanging
+        
+        self._action_timer = QTimer()  # For timed actions (slap, feed, pet)
+        self._action_timer.timeout.connect(self._on_action_complete)
+
         # --- Current mode ---
         self.current_mode = None
 
@@ -80,6 +90,10 @@ class ModeManager:
         self._check_timer.stop()
         self._bubble_timer.stop()
         
+        # Stop interactive (IMPORTANT - was missing!)
+        self._hang_timer.stop()
+        self._action_timer.stop()
+        
         # Set mode and reset state
         self.current_mode = "wanderer"
         self._wanderer_state = "idle"
@@ -93,6 +107,11 @@ class ModeManager:
         print(f"[wanderer] Moving to starting position: ({starting_pos.x()}, {starting_pos.y()})")
         self.window.move(starting_pos)
         self.movement.set_current_position(starting_pos)
+        
+        # RESET movement controller state (CRITICAL FIX)
+        self.movement.is_moving = False
+        self.movement.target_pos = None
+        self.movement.current_edge = "BOTTOM"  # Start from bottom edge
         
         # Start walking after brief idle
         self.character.set_animation("idle")
@@ -283,3 +302,287 @@ class ModeManager:
             print(f"[wanderer] Walking sadly LEFT to {closest_edge} edge")
         
         print(f"[wanderer] Target position: ({return_target.x()}, {return_target.y()})")
+
+    # ========================================================================
+    # Interactive Mode - User-Triggered Actions
+    # ========================================================================
+    
+    def switch_to_interactive(self):
+        """Switch to Interactive mode - manual control."""
+        if self.current_mode == "interactive":
+            return
+        
+        print("[mode_manager] Switching to Interactive mode")
+        
+        # Stop supervisor
+        self._check_timer.stop()
+        self._bubble_timer.stop()
+        
+        # Stop wanderer
+        self._movement_timer.stop()
+        self._pose_timer.stop()
+        self.movement.stop_moving()
+        
+        # Stop any interactive actions
+        self._hang_timer.stop()
+        self._action_timer.stop()
+        
+        # Set mode and reset state
+        self.current_mode = "interactive"
+        self._interactive_state = "idle"
+        self._hide_bubble()
+        
+        # Return to idle at current position
+        self.character.set_animation("idle")
+        
+        print("[interactive] Ready for interactions! Right-click to choose action.")
+    
+    def trigger_slap(self):
+        """User clicked 'Slap' - show reaction animation."""
+        if self.current_mode != "interactive":
+            return
+        
+        print("[interactive] *SLAP!* 👋")
+        
+        # Stop any ongoing actions
+        self._hang_timer.stop()
+        self._action_timer.stop()
+        
+        # Check if currently hanging OR if we were hanging before a previous action
+        # This handles rapid slapping while hanging
+        was_hanging = (self._interactive_state == "hanging" or 
+                      (hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action))
+        
+        self._interactive_state = "slapping"
+        
+        # Show slap reaction (different animation if hanging)
+        if was_hanging:
+            self.character.set_animation("hang_slap_reaction")
+            self.window.show_speech_bubble("OW! 😵 (still hanging!)")
+        else:
+            self.character.set_animation("slap_reaction")
+            self.window.show_speech_bubble("OW! 😵 Why?!")
+        
+        # Return to previous state after animation
+        self._action_timer.setSingleShot(True)
+        self._action_timer.start(config.SLAP_REACTION_DURATION_MS)
+        
+        # Remember if we were hanging before
+        self._was_hanging_before_action = was_hanging
+    
+    def trigger_hang(self):
+        """User clicked 'Hang' - shows hanging animation with rope."""
+        if self.current_mode != "interactive":
+            return
+        
+        print("[interactive] Hanging! 🪝")
+        
+        # Stop any ongoing actions
+        self._hang_timer.stop()
+        self._action_timer.stop()
+        
+        self._interactive_state = "hanging"
+        self._hang_phase = "struggling"
+        
+        # Set the hanging flag so other actions know we're hanging
+        self._was_hanging_before_action = True
+        
+        # Hide any speech bubble
+        self.window.hide_speech_bubble()
+        
+        # Just show hanging animation - don't move the window!
+        # The sprite itself contains the rope and shows character hanging
+        self.character.set_animation("hang_struggling")
+        
+        # After 3 seconds, switch to calm dangling
+        self._hang_timer.setSingleShot(True)
+        self._hang_timer.start(config.HANG_STRUGGLING_DURATION_MS)
+    
+    def trigger_unhang(self):
+        """User clicked 'Unhang' - release from hanging, return to idle."""
+        if self.current_mode != "interactive":
+            return
+        
+        print("[interactive] Released! 😮‍💨")
+        
+        # Stop hanging
+        self._hang_timer.stop()
+        self._interactive_state = "idle"
+        
+        # Clear the hanging flag so future actions know we're not hanging anymore
+        self._was_hanging_before_action = False
+        
+        # Return to idle animation
+        self.character.set_animation("idle")
+        
+        # Show relief message
+        self.window.show_speech_bubble("Finally! 😅")
+        
+        # Hide bubble after a moment
+        self._action_timer.setSingleShot(True)
+        self._action_timer.start(2000)
+    
+    def _on_hang_toggle(self):
+        """Toggle between struggling and dangling while hanging."""
+        if self._interactive_state != "hanging":
+            return
+        
+        if self._hang_phase == "struggling":
+            self._hang_phase = "dangling"
+            self.character.set_animation("hang_dangling")
+            print("[interactive] Now dangling calmly... 😌")
+            
+            # Alternate back to struggling after a while
+            self._hang_timer.setSingleShot(True)
+            self._hang_timer.start(config.HANG_DANGLING_DURATION_MS)
+        else:
+            self._hang_phase = "struggling"
+            self.character.set_animation("hang_struggling")
+            print("[interactive] Struggling again! 😰")
+            
+            self._hang_timer.setSingleShot(True)
+            self._hang_timer.start(config.HANG_STRUGGLING_DURATION_MS)
+    
+    def trigger_feed(self):
+        """User clicked 'Feed' - eating animation."""
+        if self.current_mode != "interactive":
+            return
+        
+        print("[interactive] *nom nom nom* 🍪")
+        
+        # Stop any ongoing actions
+        self._hang_timer.stop()
+        self._action_timer.stop()
+        
+        # Check if currently hanging OR if we were hanging before a previous action
+        was_hanging = (self._interactive_state == "hanging" or 
+                      (hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action))
+        
+        self._interactive_state = "eating"
+        
+        # Show eating animation (different if hanging)
+        if was_hanging:
+            self.character.set_animation("hang_eating")
+            self.window.show_speech_bubble("Yum! 😋 (still hanging!)")
+        else:
+            self.character.set_animation("eating")
+            self.window.show_speech_bubble("Yum! 😋")
+        
+        # After eating, show satisfied
+        self._action_timer.setSingleShot(True)
+        self._action_timer.start(config.EATING_DURATION_MS)
+        
+        # Remember if we were hanging before
+        self._was_hanging_before_action = was_hanging
+    
+    def trigger_pet(self):
+        """User clicked 'Pet' - happy affection response."""
+        if self.current_mode != "interactive":
+            return
+        
+        print("[interactive] *pat pat* 💕")
+        
+        # Stop any ongoing actions
+        self._hang_timer.stop()
+        self._action_timer.stop()
+        
+        # Check if currently hanging OR if we were hanging before a previous action
+        was_hanging = (self._interactive_state == "hanging" or 
+                      (hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action))
+        
+        self._interactive_state = "petting"
+        
+        # Show happy petting animation (different if hanging)
+        if was_hanging:
+            self.character.set_animation("hang_petting_happy")
+            self.window.show_speech_bubble("Hehe~ 💖 (still hanging!)")
+        else:
+            self.character.set_animation("petting_happy")
+            self.window.show_speech_bubble("Hehe~ 💖")
+        
+        # Return to previous state after animation
+        self._action_timer.setSingleShot(True)
+        self._action_timer.start(config.PETTING_DURATION_MS)
+        
+        # Remember if we were hanging before
+        self._was_hanging_before_action = was_hanging
+    
+    def _on_action_complete(self):
+        """Called when a timed action finishes."""
+        if self._interactive_state == "slapping":
+            # Slap reaction done, return to previous state
+            if hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action:
+                # Return to hanging
+                self._interactive_state = "hanging"
+                self._hang_phase = "dangling"
+                self.window.hide_speech_bubble()
+                self.character.set_animation("hang_dangling")
+                print("[interactive] Recovered from slap, back to hanging")
+                # Resume hang alternation
+                self._hang_timer.setSingleShot(True)
+                self._hang_timer.start(config.HANG_DANGLING_DURATION_MS)
+            else:
+                # Return to idle
+                self._interactive_state = "idle"
+                self.window.hide_speech_bubble()
+                self.character.set_animation("idle")
+                print("[interactive] Recovered from slap, back to idle")
+        
+        elif self._interactive_state == "eating":
+            # Eating done, show satisfied, then return to previous state
+            self._interactive_state = "satisfied"
+            
+            # Use hang version if was hanging
+            if hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action:
+                self.character.set_animation("hang_eating_satisfied")
+                self.window.show_speech_bubble("So good! 😊 (still hanging!)")
+            else:
+                self.character.set_animation("eating_satisfied")
+                self.window.show_speech_bubble("So good! 😊")
+            
+            # After showing satisfaction, return to previous state
+            self._action_timer.setSingleShot(True)
+            self._action_timer.start(config.SATISFIED_DURATION_MS)
+        
+        elif self._interactive_state == "satisfied":
+            # Satisfied done, return to previous state
+            if hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action:
+                # Return to hanging
+                self._interactive_state = "hanging"
+                self._hang_phase = "dangling"
+                self.window.hide_speech_bubble()
+                self.character.set_animation("hang_dangling")
+                print("[interactive] Full and happy, back to hanging")
+                # Resume hang alternation
+                self._hang_timer.setSingleShot(True)
+                self._hang_timer.start(config.HANG_DANGLING_DURATION_MS)
+            else:
+                # Return to idle
+                self._interactive_state = "idle"
+                self.window.hide_speech_bubble()
+                self.character.set_animation("idle")
+                print("[interactive] Full and happy, back to idle")
+        
+        elif self._interactive_state == "petting":
+            # Petting done, return to previous state
+            if hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action:
+                # Return to hanging
+                self._interactive_state = "hanging"
+                self._hang_phase = "dangling"
+                self.window.hide_speech_bubble()
+                self.character.set_animation("hang_dangling")
+                print("[interactive] That felt nice! Back to hanging")
+                # Resume hang alternation
+                self._hang_timer.setSingleShot(True)
+                self._hang_timer.start(config.HANG_DANGLING_DURATION_MS)
+            else:
+                # Return to idle
+                self._interactive_state = "idle"
+                self.window.hide_speech_bubble()
+                self.character.set_animation("idle")
+                print("[interactive] That felt nice! Back to idle")
+        
+        elif self._interactive_state == "idle":
+            # This handles the unhang message timeout
+            self.window.hide_speech_bubble()
+
