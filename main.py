@@ -86,22 +86,22 @@ class DesktopPetApp:
             slap_action.triggered.connect(lambda: self.mode_manager.trigger_slap())
             menu.addAction(slap_action)
             
-            # Check if currently hanging (using persistent flag)
-            is_hanging = self.mode_manager._was_hanging_before_action
+            # Check if currently floating (using persistent flag)
+            is_floating = self.mode_manager._was_floating_before_action
             
-            # Show ONLY Hang or Unhang (not both)
-            if is_hanging:
-                # Currently hanging - show only Unhang
-                unhang_action = QAction("🔓 Unhang", self.window)
-                unhang_action.setToolTip("Release them from hanging")
-                unhang_action.triggered.connect(lambda: self.mode_manager.trigger_unhang())
-                menu.addAction(unhang_action)
+            # Show ONLY Float or Unfloat (not both)
+            if is_floating:
+                # Currently floating - show only Unfloat
+                unfloat_action = QAction("📤 Unfloat", self.window)
+                unfloat_action.setToolTip("Return them to the ground")
+                unfloat_action.triggered.connect(lambda: self.mode_manager.trigger_unfloat())
+                menu.addAction(unfloat_action)
             else:
-                # Not hanging - show only Hang
-                hang_action = QAction("🪝 Hang", self.window)
-                hang_action.setToolTip("Hang them with a rope (in-place animation)")
-                hang_action.triggered.connect(lambda: self.mode_manager.trigger_hang())
-                menu.addAction(hang_action)
+                # Not floating - show only Float
+                float_action = QAction("🎈 Float", self.window)
+                float_action.setToolTip("Make them levitate with magical energy")
+                float_action.triggered.connect(lambda: self.mode_manager.trigger_float())
+                menu.addAction(float_action)
             
             feed_action = QAction("🍪 Feed", self.window)
             feed_action.setToolTip("Give them a treat")

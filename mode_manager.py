@@ -42,11 +42,11 @@ class ModeManager:
         self._return_edge = None
 
         # --- Interactive Mode components ---
-        self._interactive_state = "idle"  # idle, slapping, hanging, eating, petting, satisfied
-        self._hang_timer = QTimer()
-        self._hang_timer.timeout.connect(self._on_hang_toggle)
-        self._hang_phase = "struggling"  # struggling or dangling
-        self._was_hanging_before_action = False  # Track if action was done while hanging
+        self._interactive_state = "idle"  # idle, slapping, floating, eating, petting, satisfied
+        self._float_timer = QTimer()
+        self._float_timer.timeout.connect(self._on_float_toggle)
+        self._float_phase = "active"  # active or calm
+        self._was_floating_before_action = False  # Track if action was done while floating
         
         self._action_timer = QTimer()  # For timed actions (slap, feed, pet)
         self._action_timer.timeout.connect(self._on_action_complete)
@@ -91,7 +91,7 @@ class ModeManager:
         self._bubble_timer.stop()
         
         # Stop interactive (IMPORTANT - was missing!)
-        self._hang_timer.stop()
+        self._float_timer.stop()
         self._action_timer.stop()
         
         # Set mode and reset state
@@ -232,14 +232,14 @@ class ModeManager:
             self._on_wanderer_start_next_walk()
     
     def _on_wanderer_start_next_walk(self):
-        """Start walking to next corner in clockwise pattern."""
+        """Start driving to next corner in clockwise pattern."""
         direction = self.movement.start_walking_to_next_corner()
         
-        # Set walk animation
+        # Set driving animation
         if direction == "left":
-            self.character.set_animation("walk_left")
+            self.character.set_animation("driving_left")
         else:
-            self.character.set_animation("walk_right")
+            self.character.set_animation("driving_right")
 
     def _do_random_pose(self):
         """Show random pose at corner."""
@@ -292,14 +292,14 @@ class ModeManager:
         # Start returning to edge with sad animation
         self._wanderer_state = "returning_to_edge"
         
-        # Determine direction for sad walk animation based on target
+        # Determine direction for sad driving animation based on target
         dx = return_target.x() - new_pos.x()
         if dx > 0:
-            self.character.set_animation("sad_walk_right")
-            print(f"[wanderer] Walking sadly RIGHT to {closest_edge} edge")
+            self.character.set_animation("driving_sad_right")
+            print(f"[wanderer] Driving sadly RIGHT to {closest_edge} edge")
         else:
-            self.character.set_animation("sad_walk_left")
-            print(f"[wanderer] Walking sadly LEFT to {closest_edge} edge")
+            self.character.set_animation("driving_sad_left")
+            print(f"[wanderer] Driving sadly LEFT to {closest_edge} edge")
         
         print(f"[wanderer] Target position: ({return_target.x()}, {return_target.y()})")
 
@@ -324,7 +324,7 @@ class ModeManager:
         self.movement.stop_moving()
         
         # Stop any interactive actions
-        self._hang_timer.stop()
+        self._float_timer.stop()
         self._action_timer.stop()
         
         # Set mode and reset state
@@ -345,20 +345,20 @@ class ModeManager:
         print("[interactive] *SLAP!* 👋")
         
         # Stop any ongoing actions
-        self._hang_timer.stop()
+        self._float_timer.stop()
         self._action_timer.stop()
         
-        # Check if currently hanging OR if we were hanging before a previous action
-        # This handles rapid slapping while hanging
-        was_hanging = (self._interactive_state == "hanging" or 
-                      (hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action))
+        # Check if currently floating OR if we were floating before a previous action
+        # This handles rapid slapping while floating
+        was_floating = (self._interactive_state == "floating" or 
+                      (hasattr(self, '_was_floating_before_action') and self._was_floating_before_action))
         
         self._interactive_state = "slapping"
         
-        # Show slap reaction (different animation if hanging)
-        if was_hanging:
-            self.character.set_animation("hang_slap_reaction")
-            self.window.show_speech_bubble("OW! 😵 (still hanging!)")
+        # Show slap reaction (different animation if floating)
+        if was_floating:
+            self.character.set_animation("float_slap_reaction")
+            self.window.show_speech_bubble("OW! 😵 (still floating!)")
         else:
             self.character.set_animation("slap_reaction")
             self.window.show_speech_bubble("OW! 😵 Why?!")
@@ -367,50 +367,49 @@ class ModeManager:
         self._action_timer.setSingleShot(True)
         self._action_timer.start(config.SLAP_REACTION_DURATION_MS)
         
-        # Remember if we were hanging before
-        self._was_hanging_before_action = was_hanging
+        # Remember if we were floating before
+        self._was_floating_before_action = was_floating
     
-    def trigger_hang(self):
-        """User clicked 'Hang' - shows hanging animation with rope."""
+    def trigger_float(self):
+        """User clicked 'Float' - character levitates with magical sparkly aura."""
         if self.current_mode != "interactive":
             return
         
-        print("[interactive] Hanging! 🪝")
+        print("[interactive] Floating! 🎈")
         
         # Stop any ongoing actions
-        self._hang_timer.stop()
+        self._float_timer.stop()
         self._action_timer.stop()
         
-        self._interactive_state = "hanging"
-        self._hang_phase = "struggling"
+        self._interactive_state = "floating"
+        self._float_phase = "active"
         
-        # Set the hanging flag so other actions know we're hanging
-        self._was_hanging_before_action = True
+        # Set the floating flag so other actions know we're floating
+        self._was_floating_before_action = True
         
         # Hide any speech bubble
         self.window.hide_speech_bubble()
         
-        # Just show hanging animation - don't move the window!
-        # The sprite itself contains the rope and shows character hanging
-        self.character.set_animation("hang_struggling")
+        # Show floating animation
+        self.character.set_animation("float_active")
         
-        # After 3 seconds, switch to calm dangling
-        self._hang_timer.setSingleShot(True)
-        self._hang_timer.start(config.HANG_STRUGGLING_DURATION_MS)
+        # After a while, switch to calm floating
+        self._float_timer.setSingleShot(True)
+        self._float_timer.start(config.FLOAT_ACTIVE_DURATION_MS)
     
-    def trigger_unhang(self):
-        """User clicked 'Unhang' - release from hanging, return to idle."""
+    def trigger_unfloat(self):
+        """User clicked 'Unfloat' - release from floating, return to idle."""
         if self.current_mode != "interactive":
             return
         
-        print("[interactive] Released! 😮‍💨")
+        print("[interactive] Back to ground! 😮‍💨")
         
-        # Stop hanging
-        self._hang_timer.stop()
+        # Stop floating
+        self._float_timer.stop()
         self._interactive_state = "idle"
         
-        # Clear the hanging flag so future actions know we're not hanging anymore
-        self._was_hanging_before_action = False
+        # Clear the floating flag so future actions know we're not floating anymore
+        self._was_floating_before_action = False
         
         # Return to idle animation
         self.character.set_animation("idle")
@@ -422,26 +421,26 @@ class ModeManager:
         self._action_timer.setSingleShot(True)
         self._action_timer.start(2000)
     
-    def _on_hang_toggle(self):
-        """Toggle between struggling and dangling while hanging."""
-        if self._interactive_state != "hanging":
+    def _on_float_toggle(self):
+        """Toggle between active and calm floating."""
+        if self._interactive_state != "floating":
             return
         
-        if self._hang_phase == "struggling":
-            self._hang_phase = "dangling"
-            self.character.set_animation("hang_dangling")
-            print("[interactive] Now dangling calmly... 😌")
+        if self._float_phase == "active":
+            self._float_phase = "calm"
+            self.character.set_animation("float_calm")
+            print("[interactive] Now floating calmly... 😌")
             
-            # Alternate back to struggling after a while
-            self._hang_timer.setSingleShot(True)
-            self._hang_timer.start(config.HANG_DANGLING_DURATION_MS)
+            # Alternate back to active after a while
+            self._float_timer.setSingleShot(True)
+            self._float_timer.start(config.FLOAT_CALM_DURATION_MS)
         else:
-            self._hang_phase = "struggling"
-            self.character.set_animation("hang_struggling")
-            print("[interactive] Struggling again! 😰")
+            self._float_phase = "active"
+            self.character.set_animation("float_active")
+            print("[interactive] Floating actively again! ✨")
             
-            self._hang_timer.setSingleShot(True)
-            self._hang_timer.start(config.HANG_STRUGGLING_DURATION_MS)
+            self._float_timer.setSingleShot(True)
+            self._float_timer.start(config.FLOAT_ACTIVE_DURATION_MS)
     
     def trigger_feed(self):
         """User clicked 'Feed' - eating animation."""
@@ -451,19 +450,19 @@ class ModeManager:
         print("[interactive] *nom nom nom* 🍪")
         
         # Stop any ongoing actions
-        self._hang_timer.stop()
+        self._float_timer.stop()
         self._action_timer.stop()
         
-        # Check if currently hanging OR if we were hanging before a previous action
-        was_hanging = (self._interactive_state == "hanging" or 
-                      (hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action))
+        # Check if currently floating OR if we were floating before a previous action
+        was_floating = (self._interactive_state == "floating" or 
+                      (hasattr(self, '_was_floating_before_action') and self._was_floating_before_action))
         
         self._interactive_state = "eating"
         
-        # Show eating animation (different if hanging)
-        if was_hanging:
-            self.character.set_animation("hang_eating")
-            self.window.show_speech_bubble("Yum! 😋 (still hanging!)")
+        # Show eating animation (different if floating)
+        if was_floating:
+            self.character.set_animation("float_eating")
+            self.window.show_speech_bubble("Yum! 😋 (still floating!)")
         else:
             self.character.set_animation("eating")
             self.window.show_speech_bubble("Yum! 😋")
@@ -472,8 +471,8 @@ class ModeManager:
         self._action_timer.setSingleShot(True)
         self._action_timer.start(config.EATING_DURATION_MS)
         
-        # Remember if we were hanging before
-        self._was_hanging_before_action = was_hanging
+        # Remember if we were floating before
+        self._was_floating_before_action = was_floating
     
     def trigger_pet(self):
         """User clicked 'Pet' - happy affection response."""
@@ -483,19 +482,19 @@ class ModeManager:
         print("[interactive] *pat pat* 💕")
         
         # Stop any ongoing actions
-        self._hang_timer.stop()
+        self._float_timer.stop()
         self._action_timer.stop()
         
-        # Check if currently hanging OR if we were hanging before a previous action
-        was_hanging = (self._interactive_state == "hanging" or 
-                      (hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action))
+        # Check if currently floating OR if we were floating before a previous action
+        was_floating = (self._interactive_state == "floating" or 
+                      (hasattr(self, '_was_floating_before_action') and self._was_floating_before_action))
         
         self._interactive_state = "petting"
         
-        # Show happy petting animation (different if hanging)
-        if was_hanging:
-            self.character.set_animation("hang_petting_happy")
-            self.window.show_speech_bubble("Hehe~ 💖 (still hanging!)")
+        # Show happy petting animation (different if floating)
+        if was_floating:
+            self.character.set_animation("float_petting_happy")
+            self.window.show_speech_bubble("Hehe~ 💖 (still floating!)")
         else:
             self.character.set_animation("petting_happy")
             self.window.show_speech_bubble("Hehe~ 💖")
@@ -504,23 +503,23 @@ class ModeManager:
         self._action_timer.setSingleShot(True)
         self._action_timer.start(config.PETTING_DURATION_MS)
         
-        # Remember if we were hanging before
-        self._was_hanging_before_action = was_hanging
+        # Remember if we were floating before
+        self._was_floating_before_action = was_floating
     
     def _on_action_complete(self):
         """Called when a timed action finishes."""
         if self._interactive_state == "slapping":
             # Slap reaction done, return to previous state
-            if hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action:
-                # Return to hanging
-                self._interactive_state = "hanging"
-                self._hang_phase = "dangling"
+            if hasattr(self, '_was_floating_before_action') and self._was_floating_before_action:
+                # Return to floating
+                self._interactive_state = "floating"
+                self._float_phase = "calm"
                 self.window.hide_speech_bubble()
-                self.character.set_animation("hang_dangling")
-                print("[interactive] Recovered from slap, back to hanging")
-                # Resume hang alternation
-                self._hang_timer.setSingleShot(True)
-                self._hang_timer.start(config.HANG_DANGLING_DURATION_MS)
+                self.character.set_animation("float_calm")
+                print("[interactive] Recovered from slap, back to floating")
+                # Resume float alternation
+                self._float_timer.setSingleShot(True)
+                self._float_timer.start(config.FLOAT_CALM_DURATION_MS)
             else:
                 # Return to idle
                 self._interactive_state = "idle"
@@ -532,10 +531,10 @@ class ModeManager:
             # Eating done, show satisfied, then return to previous state
             self._interactive_state = "satisfied"
             
-            # Use hang version if was hanging
-            if hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action:
-                self.character.set_animation("hang_eating_satisfied")
-                self.window.show_speech_bubble("So good! 😊 (still hanging!)")
+            # Use float version if was floating
+            if hasattr(self, '_was_floating_before_action') and self._was_floating_before_action:
+                self.character.set_animation("float_eating_satisfied")
+                self.window.show_speech_bubble("So good! 😊 (still floating!)")
             else:
                 self.character.set_animation("eating_satisfied")
                 self.window.show_speech_bubble("So good! 😊")
@@ -546,16 +545,16 @@ class ModeManager:
         
         elif self._interactive_state == "satisfied":
             # Satisfied done, return to previous state
-            if hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action:
-                # Return to hanging
-                self._interactive_state = "hanging"
-                self._hang_phase = "dangling"
+            if hasattr(self, '_was_floating_before_action') and self._was_floating_before_action:
+                # Return to floating
+                self._interactive_state = "floating"
+                self._float_phase = "calm"
                 self.window.hide_speech_bubble()
-                self.character.set_animation("hang_dangling")
-                print("[interactive] Full and happy, back to hanging")
-                # Resume hang alternation
-                self._hang_timer.setSingleShot(True)
-                self._hang_timer.start(config.HANG_DANGLING_DURATION_MS)
+                self.character.set_animation("float_calm")
+                print("[interactive] Full and happy, back to floating")
+                # Resume float alternation
+                self._float_timer.setSingleShot(True)
+                self._float_timer.start(config.FLOAT_CALM_DURATION_MS)
             else:
                 # Return to idle
                 self._interactive_state = "idle"
@@ -565,16 +564,16 @@ class ModeManager:
         
         elif self._interactive_state == "petting":
             # Petting done, return to previous state
-            if hasattr(self, '_was_hanging_before_action') and self._was_hanging_before_action:
-                # Return to hanging
-                self._interactive_state = "hanging"
-                self._hang_phase = "dangling"
+            if hasattr(self, '_was_floating_before_action') and self._was_floating_before_action:
+                # Return to floating
+                self._interactive_state = "floating"
+                self._float_phase = "calm"
                 self.window.hide_speech_bubble()
-                self.character.set_animation("hang_dangling")
-                print("[interactive] That felt nice! Back to hanging")
-                # Resume hang alternation
-                self._hang_timer.setSingleShot(True)
-                self._hang_timer.start(config.HANG_DANGLING_DURATION_MS)
+                self.character.set_animation("float_calm")
+                print("[interactive] That felt nice! Back to floating")
+                # Resume float alternation
+                self._float_timer.setSingleShot(True)
+                self._float_timer.start(config.FLOAT_CALM_DURATION_MS)
             else:
                 # Return to idle
                 self._interactive_state = "idle"
@@ -583,6 +582,6 @@ class ModeManager:
                 print("[interactive] That felt nice! Back to idle")
         
         elif self._interactive_state == "idle":
-            # This handles the unhang message timeout
+            # This handles the unfloat message timeout
             self.window.hide_speech_bubble()
 
