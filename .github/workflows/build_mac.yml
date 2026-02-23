@@ -25,7 +25,6 @@ jobs:
             "psutil>=5.9.0" \
             "pyobjc-core>=9.0" \
             "pyobjc-framework-Cocoa>=9.0" \
-            "pyobjc-framework-Foundation>=9.0" \
             "PyInstaller>=6.0.0"
 
       - name: Build .app with PyInstaller
