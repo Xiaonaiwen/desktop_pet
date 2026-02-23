@@ -141,7 +141,7 @@ if sys.platform == "darwin":
     app = BUNDLE(
         exe,
         name="DesktopPet.app",
-        # icon="assets/icon.icns",   # Uncomment and add icon file if you have one
+        icon="assets/icon.icns",
         bundle_identifier="com.desktoppet.app",
         info_plist={
             # Allow the app to stay on top and be seen on all Spaces
