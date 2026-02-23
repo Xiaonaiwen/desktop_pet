@@ -56,3 +56,13 @@ jobs:
           name: DesktopPet-mac
           path: dist/DesktopPet-mac.zip
           retention-days: 30   # Download available for 30 days
+
+      - name: Remove assets from repo after build
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git rm -r --cached assets/ 2>/dev/null || true
+          echo "assets/" >> .gitignore
+          git add .gitignore
+          git diff --cached --quiet || git commit -m "auto: remove assets after Mac build"
+          git push
