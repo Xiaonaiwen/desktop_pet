@@ -8,11 +8,6 @@ dist/
 build/
 *.egg
 
-# PyInstaller build output
-build/
-dist/
-*.spec
-
 # IDE
 .vscode/
 .idea/
