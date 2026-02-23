@@ -9,7 +9,16 @@ import os
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+import sys as _sys
+
+# When running as a PyInstaller bundle, _MEIPASS is the temp folder
+# where all bundled files are extracted. Fall back to the normal script
+# directory when running from source.
+if hasattr(_sys, "_MEIPASS"):
+    BASE_DIR = _sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 SPRITES_DIR = os.path.join(BASE_DIR, "assets", "sprites")
 
 # ---------------------------------------------------------------------------

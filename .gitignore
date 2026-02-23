@@ -25,8 +25,8 @@ Thumbs.db
 
 # Generated / personal assets
 # (sprites you generate from your own photos — keep them local, not in git)
-assets/sprites/*.png
-assets/sprites/*.jpg
+# assets/sprites/*.png
+# assets/sprites/*.jpg
 
 # Logs
 logs/

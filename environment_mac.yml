@@ -1,0 +1,18 @@
+name: desktop_pet
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - PyQt6>=6.5.0
+    - Pillow>=10.0.0
+    - psutil>=5.9.0
+    - pyobjc-core>=9.0              # Mac: base for all pyobjc bindings
+    - pyobjc-framework-Cocoa>=9.0   # Mac: NSWorkspace (active window detection)
+    - pyobjc-framework-AppKit>=9.0  # Mac: NSApp, NSFloatingWindowLevel (window layering)
+    - pyobjc-framework-Foundation>=9.0  # Mac: base Foundation types
+    - PyInstaller>=6.0.0            # Package into .app
+    - rembg>=2.0.72                 # Background removal (sprite prep only, not in build)
+    - onnxruntime>=1.16.0           # Required by rembg

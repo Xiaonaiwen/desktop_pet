@@ -1,14 +1,11 @@
 # app_monitor.py
 # ---------------------------------------------------------------------------
-# Detects what application is currently active on Windows,
-# and looks up what reaction the pet should have.
-#
-# Uses pywin32 (win32gui) to call the Windows API directly —
-# this is the only way to reliably get the active window title on Windows.
+# Detects what application is currently active, cross-platform.
+# Windows: uses pywin32 (win32gui) to get the focused window title
+# Mac:     uses AppKit (NSWorkspace) to get the active app name
 # ---------------------------------------------------------------------------
 
-import win32gui
-
+import sys
 import config
 
 
@@ -16,8 +13,8 @@ class AppMonitor:
     """Polls the active window and returns the matching reaction."""
 
     def __init__(self):
-        self._last_title = ""          # cache: avoid re-triggering on the same window
-        self._last_reaction = None     # the reaction we last returned
+        self._last_title = ""
+        self._last_reaction = None
 
     # ------------------------------------------------------------------
     # Public
@@ -25,14 +22,10 @@ class AppMonitor:
     def check(self) -> tuple | None:
         """
         Check the currently active window.
-        Returns a (animation_name, speech_text) tuple if the active app
-        changed since last check, or None if nothing changed.
-
-        This is called by mode_manager on a timer — not continuously.
+        Returns (animation_name, speech_text) if the app changed, else None.
         """
         title = self._get_active_window_title()
 
-        # Only trigger a new reaction if the window actually changed
         if title == self._last_title:
             return None
 
@@ -48,17 +41,35 @@ class AppMonitor:
         return reaction
 
     # ------------------------------------------------------------------
-    # Internal — Windows API
+    # Internal — platform-specific window detection
     # ------------------------------------------------------------------
     def _get_active_window_title(self) -> str:
-        """
-        Use win32gui to get the title bar text of the currently focused window.
-        Returns an empty string if no window is focused (e.g. desktop).
-        """
-        hwnd = win32gui.GetForegroundWindow()
-        if hwnd == 0:
+        """Get the active window title, dispatches to platform-specific method."""
+        if sys.platform == "win32":
+            return self._get_title_windows()
+        elif sys.platform == "darwin":
+            return self._get_title_mac()
+        return ""
+
+    def _get_title_windows(self) -> str:
+        """Windows: use win32gui to get focused window title."""
+        try:
+            import win32gui
+            hwnd = win32gui.GetForegroundWindow()
+            if hwnd == 0:
+                return ""
+            return win32gui.GetWindowText(hwnd)
+        except Exception:
             return ""
-        return win32gui.GetWindowText(hwnd)
+
+    def _get_title_mac(self) -> str:
+        """Mac: use AppKit NSWorkspace to get active application name."""
+        try:
+            from AppKit import NSWorkspace
+            active_app = NSWorkspace.sharedWorkspace().activeApplication()
+            return active_app.get("NSApplicationName", "")
+        except Exception:
+            return ""
 
     # ------------------------------------------------------------------
     # Internal — reaction matching
@@ -66,10 +77,8 @@ class AppMonitor:
     def _match_reaction(self, title: str) -> tuple | None:
         """
         Compare the window title against APP_REACTIONS in config.
-        Matching is case-insensitive. First match wins.
-
-        Returns (animation_name, speech_text) or None if no match.
-        speech_text can be None (meaning: change animation but don't show bubble).
+        Case-insensitive. First match wins.
+        Returns (animation_name, speech_text) or None.
         """
         title_lower = title.lower()
 
@@ -77,5 +86,4 @@ class AppMonitor:
             if keyword.lower() in title_lower:
                 return (animation, speech)
 
-        # No match at all — return idle with no bubble
         return ("idle", None)

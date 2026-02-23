@@ -48,17 +48,33 @@ class PetWindow(QWidget):
     # ------------------------------------------------------------------
     def _setup_window(self):
         """Configure the window to be transparent, frameless, and on top."""
-        self.setWindowFlags(
+        flags = (
             Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
             | Qt.WindowType.Tool
         )
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setWindowTitle("Desktop Pet")
 
-        # Window is large enough to hold bubble + character
-        # Bubble can be up to ~350px wide + padding, character is 200px
-        # Make window 900x900 to have plenty of room in all directions
+        # On Mac, Tool windows don't always stay on top across spaces.
+        # WindowDoesNotAcceptFocus prevents the pet stealing keyboard focus.
+        import sys
+        if sys.platform == "darwin":
+            flags |= Qt.WindowType.WindowDoesNotAcceptFocus
+
+        self.setWindowFlags(flags)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        # On Mac, also set window level via native call so it stays above the Dock
+        if sys.platform == "darwin":
+            try:
+                from AppKit import NSApp, NSFloatingWindowLevel
+                self.show()  # window must exist before we can set level
+                # Get the native NSWindow and raise its level
+                nswindow = NSApp.windows()[-1]
+                nswindow.setLevel_(NSFloatingWindowLevel)
+            except Exception:
+                pass  # AppKit not available — default flags still work fine
+
+        self.setWindowTitle("Desktop Pet")
         self.setFixedSize(900, 900)
 
     def _set_starting_position(self):

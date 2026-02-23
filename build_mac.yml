@@ -1,0 +1,46 @@
+name: Build Mac App
+
+on:
+  workflow_dispatch:   # Manual trigger from GitHub Actions tab
+
+jobs:
+  build-mac:
+    runs-on: macos-latest   # GitHub provides a real Mac machine for free
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install \
+            PyQt6>=6.5.0 \
+            Pillow>=10.0.0 \
+            psutil>=5.9.0 \
+            pyobjc-core>=9.0 \
+            pyobjc-framework-Cocoa>=9.0 \
+            pyobjc-framework-AppKit>=9.0 \
+            pyobjc-framework-Foundation>=9.0 \
+            PyInstaller>=6.0.0
+
+      - name: Build .app with PyInstaller
+        run: |
+          pyinstaller desktop_pet.spec
+
+      - name: Zip the .app for download
+        run: |
+          cd dist
+          zip -r DesktopPet-mac.zip DesktopPet.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DesktopPet-mac
+          path: dist/DesktopPet-mac.zip
+          retention-days: 30   # Download available for 30 days
